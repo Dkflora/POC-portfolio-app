@@ -37,7 +37,7 @@ jobs:   # Continuoius Integration job
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: FS Scan with Trivy  # Scan for filesystem vulnerabilities
+      - name: FS Scan with Trivy  # Scan for filesystem vulnerabilities of the application code
         uses: aquasecurity/trivy-action@master
         with:
             scan-type: 'fs'
