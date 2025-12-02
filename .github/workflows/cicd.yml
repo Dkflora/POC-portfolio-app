@@ -20,7 +20,7 @@ env:
 jobs:
   Build:
     runs-on: ubuntu-latest
-    outputs:  # Define outputs for the Deploy job
+    outputs:  # Define outputs for the Deploy jobs
       image-uri: ${{ steps.set-image.outputs.image-uri }}
     steps:
       - name: Clone repo
