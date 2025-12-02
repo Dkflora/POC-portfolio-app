@@ -14,7 +14,7 @@ permissions:
 env:
     AWS_REGION: us-east-1
     AWS_ROLE: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-    ECR_REPO_NAME: uat
+    ECR_REPO_NAME: uat-app
     IMAGE_TAG: ${{ github.run_number }}
     TASK_DEFINITION: demo-task
     ECS_CLUSTER: staging-cluster
@@ -36,6 +36,44 @@ jobs:   # Continuoius Integration job
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+
+      - name: FS Scan with Trivy  # Scan for filesystem vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+            scan-type: 'fs'
+            scan-ref: '.'
+            format: 'json'
+            output: "trivy-fs-results.json"
+            exit-code: '0'
+            severity: 'CRITICAL,HIGH'
+            ignore-unfixed: true
+      - name: Build and tag image
+        run: |
+            docker build -t ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_NAME}}:${{ env.IMAGE_TAG }} .
+      - name: Scan Docker Image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_NAME}}:${{ env.IMAGE_TAG }}"
+          format: "json"
+          exit-code: "0"
+          output: "trivy-image-results.json"
+          severity: "CRITICAL,HIGH"
+      - name: Push image to ECR
+        run: |
+          docker push ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_NAME}}:${{ env.IMAGE_TAG }}
+      - name: Store image URI for Deploy job
+        id: set-image
+        run: |
+          IMAGE_URI="${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_NAME}}:${{ env.IMAGE_TAG }}"
+          echo "image-uri=$IMAGE_URI" >> $GITHUB_OUTPUT
+
+
+
+
+
+
+
+
 
 
 
